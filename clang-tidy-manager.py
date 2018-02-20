@@ -114,7 +114,8 @@ class ClangTidyError(Exception):
 def run_file(filename):
     full_name = os.path.join(os.getcwd(), filename)
 
-    folders = "{}/({}).*".format(os.getcwd(), "|".join(folders_to_run))
+    folders = "({}).*".format("|".join([os.path.abspath(folder)
+                                        for folder in folders_to_run]))
 
     checks = "-checks={}".format(",".join(clang_tidy_checks))
 
@@ -252,6 +253,7 @@ def nocolor_output(parsed_output):
 def main():
     global clang_tidy_exec
     global clang_tidy_raw_options
+    global clang_tidy_build_dir
     global folders_to_run
     global raw
     global verbose
@@ -345,7 +347,7 @@ def main():
 
     clang_tidy_raw_options.append("-format-style={}".format(args.format_style))
 
-    tp = multiprocessing.pool.ThreadPool(args.j)
+    tp = multiprocessing.pool.ThreadPool(jobs)
 
     raw_outputs = tp.map(run_file, find_all_files(args.files))
     parsed_outputs = map(parse_output, raw_outputs)
