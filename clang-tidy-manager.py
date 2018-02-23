@@ -41,7 +41,7 @@ clang_tidy_checks = ["boost*",
 folders_to_run = ["."]
 extentions_to_run = [".cpp", ".cxx", ".cc"]
 
-warning_regex = "((?:\\/[^\\s\\/:]+)+):(\\d+):(\\d+): (warning|note|error|fatal error): ((?:operator\\[\\]|[^\\n\\[])+)(?:\\[([^\\]]+)\\])?"
+warning_regex = "([^\\s]+):(\\d+):(\\d+): (warning|note|error|fatal error): ((?:operator\\[\\]|[^\\n\\[])+)(?:\\[([^\\]]+)\\])?"
 warning_regex_program = re.compile(warning_regex, re.ASCII | re.MULTILINE)
 
 clang_tidy_build_dir = None
@@ -122,7 +122,7 @@ def run_file(filename):
     if (clang_tidy_build_dir is not None):
         build_arg = "-p={}".format(clang_tidy_build_dir)
     else:
-        build_arg = "-p={}".format(os.path.dirname(os.path.abspath(filename)))
+        build_arg = ""
 
     args = [clang_tidy_exec, checks, "-header-filter={}".format(folders), full_name, build_arg] + clang_tidy_raw_options
 
@@ -187,7 +187,12 @@ def parse_output(raw_output):
 
     for elem in matches:
         if elem.diagnostic_type == "note":
-            combined_matches[-1].append(elem)
+            try:
+                combined_matches[-1].append(elem)
+            except IndexError as e:
+                print(combined_matches)
+                print(elem.full_text)
+                raise e
         else:
             combined_matches.append([elem])
 
@@ -292,7 +297,6 @@ def main():
                         metavar="/path/to/build/tree",
                         type=str,
                         nargs='?',
-                        default=os.getcwd(),
                         help="Folder to find compile-commands.json in. Defaults to $PWD")
     parser.add_argument("-r", "--raw",
                         action="store_true",
